@@ -1,3 +1,4 @@
+#coding:utf-8
 # session
 
 import tensorflow as tf
