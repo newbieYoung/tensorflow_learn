@@ -1,3 +1,4 @@
+#coding:utf-8
 # 简单的线性回归
 
 import tensorflow as tf
@@ -18,7 +19,7 @@ optimizer = tf.train.GradientDescentOptimizer(0.5)
 train = optimizer.minimize(loss)
 # create tensorflow structure end #
 
-init = tf.initialize_all_variables()
+init = tf.global_variables_initializer()
 
 sess = tf.Session()
 sess.run(init)
