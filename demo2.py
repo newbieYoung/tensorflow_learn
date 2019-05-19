@@ -13,10 +13,16 @@ print(new_value)
 
 update = tf.assign(state, new_value)# 赋值 state = new_value
 
-init = tf.initialize_all_variables()# 初始化变量
+#init = tf.initialize_all_variables()# 变量初始化
 
 with tf.Session() as sess:
-	sess.run(init)
+
+	# 可以使用 initialize_all_variables 初始化全部变量
+	#sess.run(init)
+
+	# 或者单独初始化
+	sess.run(state.initializer)
+
 	for _ in range(3):
 		sess.run(update)
 		print(sess.run(state))
