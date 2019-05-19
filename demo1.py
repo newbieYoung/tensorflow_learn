@@ -1,5 +1,5 @@
 #coding:utf-8
-# session
+# 会话
 
 import tensorflow as tf
 

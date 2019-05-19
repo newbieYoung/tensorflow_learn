@@ -1,5 +1,5 @@
 #coding:utf-8
-# placeholder
+# 占位符
 
 import tensorflow as tf
 
