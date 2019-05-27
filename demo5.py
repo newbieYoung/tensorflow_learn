@@ -15,7 +15,7 @@ y1 = tf.matmul(x,w1)
 y = tf.matmul(y1,w2)
 
 #变量初始化
-init = tf.initialize_all_variables()# 变量初始化
+init = tf.initialize_all_variables()
 
 with tf.Session() as sess:
 	sess.run(init)
