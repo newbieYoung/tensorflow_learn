@@ -27,7 +27,7 @@ y_r = tf.sigmoid(y_r)
 cross_entropy = -tf.reduce_mean(y_i * tf.log(tf.clip_by_value(y_r, 1e-10, 1.0))
                                 + (1-y_i) * tf.log(tf.clip_by_value(1-y_r, 1e-10, 1.0)))
 
-# 定义优化方法
+# 优化方法
 train_step = tf.train.AdamOptimizer(0.001).minimize(cross_entropy)
 
 # 变量初始化
