@@ -1,5 +1,5 @@
 #coding:utf-8
-# mnist 数字识别
+# mnist 数字识别 单层神经网络模型
 
 import tensorflow as tf
 from tensorflow.examples.tutorials.mnist import input_data
@@ -22,7 +22,7 @@ OUTPUT_NODE = 10 # 输出层节点数（类别数目，因为要区分 0-9 这10
 BATCH_SIZE = 100 # 单词训练数据量（小批量）
 TRAINING_STEPS = 1000 # 训练轮数
 
-# 基础训练模型
+# 单层神经网络模型
 def train_model():
     # 输入
     x_i = tf.placeholder(tf.float32, shape=(None,INPUT_NODE), name='x-input')
@@ -51,10 +51,6 @@ def train_model():
     with tf.Session() as sess :
         sess.run(init_op)
 
-        # 训练之前经网络参数的值
-        # print(sess.run(W))
-        # print(sess.run(b))
-
         # 设定训练的轮数
         for i in range(TRAINING_STEPS) :
 
@@ -66,13 +62,9 @@ def train_model():
             sess.run(train_step, feed_dict={x_i: mnist.train.images[start:end], y_i: mnist.train.labels[start:end]})
 
             # 每隔一段时间计算在所有训练数据上的交叉熵并输出
-            # if i % 1000 == 0 :
+            # if i % 200 == 0 :
             #    total_cross_entropy = sess.run(cross_entropy, feed_dict={x_i:mnist.train.images,y_i:mnist.train.labels})
             #    print('After %d training steps, cross entropy on all data is %g' % (i, total_cross_entropy))
-
-        # 训练之后神经网络参数的值
-        # print(sess.run(W))
-        # print(sess.run(b))
 
         # 正确率
         print(sess.run(accuracy, feed_dict={x_i: mnist.test.images, y_i: mnist.test.labels}))
