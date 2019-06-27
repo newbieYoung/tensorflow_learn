@@ -22,58 +22,62 @@ OUTPUT_NODE = 10 # 输出层节点数（类别数目，因为要区分 0-9 这10
 BATCH_SIZE = 100 # 单词训练数据量（小批量）
 TRAINING_STEPS = 1000 # 训练轮数
 
-# 输入
-x_i = tf.placeholder(tf.float32, shape=(None,INPUT_NODE), name='x-input')
-y_i = tf.placeholder(tf.float32, shape=(None,OUTPUT_NODE), name='y-input')
+# 基础训练模型
+def train_model():
+    # 输入
+    x_i = tf.placeholder(tf.float32, shape=(None,INPUT_NODE), name='x-input')
+    y_i = tf.placeholder(tf.float32, shape=(None,OUTPUT_NODE), name='y-input')
 
-# 权重值 和 偏置量
-W = tf.Variable(tf.zeros([INPUT_NODE,OUTPUT_NODE]))
-b = tf.Variable(tf.zeros([OUTPUT_NODE]))
+    # 权重值 和 偏置量
+    W = tf.Variable(tf.zeros([INPUT_NODE,OUTPUT_NODE]))
+    b = tf.Variable(tf.zeros([OUTPUT_NODE]))
 
-# 输出
-y = tf.nn.softmax(tf.matmul(x_i,W) + b) # softmax 将神经网络向前传播得到的结果转换为概率分布
+    # 输出
+    y = tf.nn.softmax(tf.matmul(x_i,W) + b) # softmax 将神经网络向前传播得到的结果转换为概率分布
 
-# 损失函数
-cross_entropy = -tf.reduce_sum(y_i * tf.log(y)) # 交叉熵
+    # 损失函数
+    cross_entropy = -tf.reduce_sum(y_i * tf.log(y)) # 交叉熵
 
-# 优化方法
-train_step = tf.train.GradientDescentOptimizer(0.01).minimize(cross_entropy)
+    # 优化方法
+    train_step = tf.train.GradientDescentOptimizer(0.01).minimize(cross_entropy)
 
-# 模型评估
-correct_prediction = tf.equal(tf.argmax(y,1), tf.argmax(y_i,1))
-accuracy = tf.reduce_mean(tf.cast(correct_prediction, 'float'))
+    # 模型评估
+    correct_prediction = tf.equal(tf.argmax(y,1), tf.argmax(y_i,1))
+    accuracy = tf.reduce_mean(tf.cast(correct_prediction, 'float'))
 
-# 变量初始化
-init_op = tf.global_variables_initializer()
+    # 变量初始化
+    init_op = tf.global_variables_initializer()
 
-with tf.Session() as sess :
-    sess.run(init_op)
+    with tf.Session() as sess :
+        sess.run(init_op)
 
-    # 训练之前经网络参数的值
-    # print(sess.run(W))
-    # print(sess.run(b))
+        # 训练之前经网络参数的值
+        # print(sess.run(W))
+        # print(sess.run(b))
 
-    # 设定训练的轮数
-    for i in range(TRAINING_STEPS) :
+        # 设定训练的轮数
+        for i in range(TRAINING_STEPS) :
 
-        # 每次选取 batch_size 个样本进行训练
-        start = (i * BATCH_SIZE) % mnist.train.num_examples
-        end = min(start + BATCH_SIZE, mnist.train.num_examples)
+            # 每次选取 batch_size 个样本进行训练
+            start = (i * BATCH_SIZE) % mnist.train.num_examples
+            end = min(start + BATCH_SIZE, mnist.train.num_examples)
 
-        # 通过选取的样本训练神经网络并更新参数
-        sess.run(train_step, feed_dict={x_i: mnist.train.images[start:end], y_i: mnist.train.labels[start:end]})
+            # 通过选取的样本训练神经网络并更新参数
+            sess.run(train_step, feed_dict={x_i: mnist.train.images[start:end], y_i: mnist.train.labels[start:end]})
 
-        # 每隔一段时间计算在所有训练数据上的交叉熵并输出
-        # if i % 1000 == 0 :
-        #    total_cross_entropy = sess.run(cross_entropy, feed_dict={x_i:mnist.train.images,y_i:mnist.train.labels})
-        #    print('After %d training steps, cross entropy on all data is %g' % (i, total_cross_entropy))
+            # 每隔一段时间计算在所有训练数据上的交叉熵并输出
+            # if i % 1000 == 0 :
+            #    total_cross_entropy = sess.run(cross_entropy, feed_dict={x_i:mnist.train.images,y_i:mnist.train.labels})
+            #    print('After %d training steps, cross entropy on all data is %g' % (i, total_cross_entropy))
 
-    # 训练之后神经网络参数的值
-    # print(sess.run(W))
-    # print(sess.run(b))
+        # 训练之后神经网络参数的值
+        # print(sess.run(W))
+        # print(sess.run(b))
 
-    # 正确率
-    print(sess.run(accuracy, feed_dict={x_i: mnist.test.images, y_i: mnist.test.labels}))
+        # 正确率
+        print(sess.run(accuracy, feed_dict={x_i: mnist.test.images, y_i: mnist.test.labels}))
+
+train_model()# 正确率 0.9125
 
 
 
