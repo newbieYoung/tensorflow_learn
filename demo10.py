@@ -1,5 +1,5 @@
 #coding:utf-8
-# mnist 数字识别 单层神经网络模型
+# mnist 数字识别 神经网络模型 加入一层隐藏层 学习率设置（指数衰减法）
 
 import tensorflow as tf
 from tensorflow.examples.tutorials.mnist import input_data
@@ -19,28 +19,53 @@ INPUT_NODE = 784 # 输入层节点数（28 * 28 共 784 个像素）
 OUTPUT_NODE = 10 # 输出层节点数（类别数目，因为要区分 0-9 这10个数字，因此这里的输出层节点数为10）
 
 # 配置神经网络的参数
+LAYER1_NODE = 500 # 隐藏层节点数（这里只加入一层有 500 个节点的隐藏层）
 BATCH_SIZE = 100 # 单词训练数据量（小批量）
-TRAINING_STEPS = 10000 # 训练轮数
-LEARNING_RATE_BASE = 0.01 # 基础学习率
+TRAINING_STEPS = 1000 # 训练轮数
+LEARNING_RATE_BASE = 0.005 # 基础学习率
+LEARNING_RATE_DECAY = 0.99 # 学习率的衰减率
 
-# 单层神经网络模型
+# 多层神经网络模型
 def train_model():
     # 输入
     x_i = tf.placeholder(tf.float32, shape=(None,INPUT_NODE), name='x-input')
     y_i = tf.placeholder(tf.float32, shape=(None,OUTPUT_NODE), name='y-input')
 
-    # 权重值 和 偏置量
-    W = tf.Variable(tf.zeros([INPUT_NODE,OUTPUT_NODE]))
-    b = tf.Variable(tf.zeros([OUTPUT_NODE]))
+    # 隐藏层参数
+    # w1 = tf.Variable(tf.zeros([INPUT_NODE, LAYER1_NODE]))
+    # b1 = tf.Variable(tf.zeros([LAYER1_NODE]))
+    w1 = tf.Variable(tf.truncated_normal([INPUT_NODE, LAYER1_NODE], stddev=0.1)) # truncated_normal 正态分布产生函数
+    b1 = tf.Variable(tf.constant(0.1, shape=[LAYER1_NODE]))
 
-    # 输出
-    y = tf.nn.softmax(tf.matmul(x_i,W) + b) # softmax 将神经网络向前传播得到的结果转换为概率分布
+    # 输出层参数
+    # W = tf.Variable(tf.zeros([LAYER1_NODE, OUTPUT_NODE]))
+    # b = tf.Variable(tf.zeros([OUTPUT_NODE]))
+    W = tf.Variable(tf.truncated_normal([LAYER1_NODE, OUTPUT_NODE], stddev=0.1))
+    b = tf.Variable(tf.constant(0.1, shape=[OUTPUT_NODE]))
+
+    # 学习率指数衰减法
+    global_step = tf.Variable(0, trainable=False)
+    learning_rate = tf.train.exponential_decay(
+        LEARNING_RATE_BASE, # 基础学习率
+        global_step, # 当前迭代轮数
+        mnist.train.num_examples / BATCH_SIZE, # 过完所有训练数据的迭代轮数
+        LEARNING_RATE_DECAY # 学习率衰减速度
+    )
+
+    # 隐藏层前向传播结果
+    y_1 = tf.nn.relu(tf.matmul(x_i, w1)) + b1 # relu 激活函数去线性化
+
+    # 输出层前向传播结果
+    #y = tf.nn.softmax(tf.matmul(y_1, W) + b) # softmax 将神经网络向前传播得到的结果转换为概率分布
+    y = tf.matmul(y_1, W) + b
 
     # 损失函数
-    cross_entropy = -tf.reduce_sum(y_i * tf.log(y)) # 交叉熵
+    # cross_entropy = -tf.reduce_sum(y_i * tf.log(y)) # 交叉熵
+    # cross_entropy = tf.nn.softmax_cross_entropy_with_logits(labels=y_i, logits=y)
+    cross_entropy = tf.nn.sparse_softmax_cross_entropy_with_logits(labels=tf.argmax(y_i, 1), logits=y)
 
     # 优化方法
-    train_step = tf.train.GradientDescentOptimizer(LEARNING_RATE_BASE).minimize(cross_entropy)
+    train_step = tf.train.GradientDescentOptimizer(learning_rate).minimize(cross_entropy, global_step=global_step)
 
     # 模型评估
     correct_prediction = tf.equal(tf.argmax(y,1), tf.argmax(y_i,1))
