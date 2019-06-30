@@ -1,5 +1,5 @@
 #coding:utf-8
-# mnist 数字识别 多层神经网络模型
+# mnist 数字识别 神经网络模型 加入一层隐藏层
 
 import tensorflow as tf
 from tensorflow.examples.tutorials.mnist import input_data
@@ -46,10 +46,13 @@ def train_model():
     y_1 = tf.nn.relu(tf.matmul(x_i, w1)) + b1 # relu 激活函数去线性化
 
     # 输出层前向传播结果
-    y = tf.nn.softmax(tf.matmul(y_1, W) + b) # softmax 将神经网络向前传播得到的结果转换为概率分布
+    # y = tf.nn.softmax(tf.matmul(y_1, W) + b) # softmax 将神经网络向前传播得到的结果转换为概率分布
+    y = tf.matmul(y_1, W) + b
 
     # 损失函数
-    cross_entropy = -tf.reduce_sum(y_i * tf.log(y)) # 交叉熵
+    # cross_entropy = -tf.reduce_sum(y_i * tf.log(y)) # 交叉熵
+    # cross_entropy = tf.nn.softmax_cross_entropy_with_logits(labels=y_i, logits=y)
+    cross_entropy = tf.nn.sparse_softmax_cross_entropy_with_logits(labels=tf.argmax(y_i, 1), logits=y)
 
     # 优化方法
     train_step = tf.train.GradientDescentOptimizer(LEARNING_RATE_BASE).minimize(cross_entropy)
