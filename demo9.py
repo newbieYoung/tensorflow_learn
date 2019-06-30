@@ -1,5 +1,5 @@
 #coding:utf-8
-# mnist 数字识别 单层神经网络模型
+# mnist 数字识别 多层神经网络模型
 
 import tensorflow as tf
 from tensorflow.examples.tutorials.mnist import input_data
@@ -19,22 +19,34 @@ INPUT_NODE = 784 # 输入层节点数（28 * 28 共 784 个像素）
 OUTPUT_NODE = 10 # 输出层节点数（类别数目，因为要区分 0-9 这10个数字，因此这里的输出层节点数为10）
 
 # 配置神经网络的参数
+LAYER1_NODE = 500 # 隐藏层节点数（这里只加入一层有 500 个节点的隐藏层）
 BATCH_SIZE = 100 # 单词训练数据量（小批量）
 TRAINING_STEPS = 1000 # 训练轮数
-LEARNING_RATE_BASE = 0.01 # 基础学习率
+LEARNING_RATE_BASE = 0.001 # 基础学习率
 
-# 单层神经网络模型
+# 多层神经网络模型
 def train_model():
     # 输入
     x_i = tf.placeholder(tf.float32, shape=(None,INPUT_NODE), name='x-input')
     y_i = tf.placeholder(tf.float32, shape=(None,OUTPUT_NODE), name='y-input')
 
-    # 权重值 和 偏置量
-    W = tf.Variable(tf.zeros([INPUT_NODE,OUTPUT_NODE]))
-    b = tf.Variable(tf.zeros([OUTPUT_NODE]))
+    # 隐藏层参数
+    # w1 = tf.Variable(tf.zeros([INPUT_NODE, LAYER1_NODE]))
+    # b1 = tf.Variable(tf.zeros([LAYER1_NODE]))
+    w1 = tf.Variable(tf.truncated_normal([INPUT_NODE, LAYER1_NODE], stddev=0.1)) # truncated_normal 正态分布产生函数
+    b1 = tf.Variable(tf.constant(0.1, shape=[LAYER1_NODE]))
 
-    # 输出
-    y = tf.nn.softmax(tf.matmul(x_i,W) + b) # softmax 将神经网络向前传播得到的结果转换为概率分布
+    # 输出层参数
+    # W = tf.Variable(tf.zeros([LAYER1_NODE, OUTPUT_NODE]))
+    # b = tf.Variable(tf.zeros([OUTPUT_NODE]))
+    W = tf.Variable(tf.truncated_normal([LAYER1_NODE, OUTPUT_NODE], stddev=0.1))
+    b = tf.Variable(tf.constant(0.1, shape=[OUTPUT_NODE]))
+
+    # 隐藏层前向传播结果
+    y_1 = tf.nn.relu(tf.matmul(x_i, w1)) + b1 # relu 激活函数去线性化
+
+    # 输出层前向传播结果
+    y = tf.nn.softmax(tf.matmul(y_1, W) + b) # softmax 将神经网络向前传播得到的结果转换为概率分布
 
     # 损失函数
     cross_entropy = -tf.reduce_sum(y_i * tf.log(y)) # 交叉熵
