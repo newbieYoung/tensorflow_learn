@@ -26,7 +26,7 @@ init = tf.global_variables_initializer()
 
 with tf.Session() as sess:
 	sess.run(init)
-	for step in range(200):
+	for step in range(201):
 		sess.run(train)
 		if step % 20 == 0:
 			print(step,sess.run(Weights),sess.run(biases))
