@@ -20,7 +20,7 @@ OUTPUT_NODE = 10 # 输出层节点数（类别数目，因为要区分 0-9 这10
 
 # 配置神经网络的参数
 LAYER1_NODE = 500 # 隐藏层节点数（这里只加入一层有 500 个节点的隐藏层）
-BATCH_SIZE = 100 # 单词训练数据量（小批量）
+BATCH_SIZE = 100 # 单次训练数据量（小批量）
 TRAINING_STEPS = 1000 # 训练轮数
 LEARNING_RATE_BASE = 0.005 # 基础学习率
 
