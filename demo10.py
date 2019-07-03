@@ -22,7 +22,7 @@ OUTPUT_NODE = 10 # 输出层节点数（类别数目，因为要区分 0-9 这10
 LAYER1_NODE = 500 # 隐藏层节点数（这里只加入一层有 500 个节点的隐藏层）
 BATCH_SIZE = 100 # 单次训练数据量（小批量）
 TRAINING_STEPS = 1000 # 训练轮数
-LEARNING_RATE_BASE = 0.005 # 基础学习率
+LEARNING_RATE_BASE = 0.005 # 基础学习速率
 LEARNING_RATE_DECAY = 0.99 # 学习率的衰减率
 
 # 多层神经网络模型
