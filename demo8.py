@@ -72,7 +72,7 @@ def train_model():
         # 正确率
         print(sess.run(accuracy, feed_dict={x_i: mnist.test.images, y_i: mnist.test.labels}))
 
-train_model()# 正确率 0.9125
+train_model()# 正确率 0.91左右
 
 
 
