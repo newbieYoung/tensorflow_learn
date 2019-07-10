@@ -20,7 +20,7 @@ OUTPUT_NODE = 10 # 输出层节点数（类别数目，因为要区分 0-9 这10
 
 # 配置神经网络的参数
 BATCH_SIZE = 100 # 单次训练数据量（小批量）
-TRAINING_STEPS = 10000 # 训练轮数
+TRAINING_STEPS = 5000 # 训练轮数
 LEARNING_RATE_BASE = 0.01 # 基础学习速率
 
 # 单层神经网络模型
@@ -72,7 +72,7 @@ def train_model():
         # 正确率
         print(sess.run(accuracy, feed_dict={x_i: mnist.test.images, y_i: mnist.test.labels}))
 
-train_model()# 正确率 0.91左右
+train_model()# 正确率 0.92左右
 
 
 
