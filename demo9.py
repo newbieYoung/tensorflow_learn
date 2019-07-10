@@ -1,5 +1,5 @@
 #coding:utf-8
-# mnist 数字识别 神经网络模型 （隐藏层 + 学习速率指数衰减）
+# mnist 数字识别 神经网络模型 （隐藏层 + 学习速率指数衰减 + L2正则化）
 
 import tensorflow as tf
 from tensorflow.examples.tutorials.mnist import input_data
@@ -27,20 +27,16 @@ LEARNING_RATE_DECAY = 0.99 # 学习率的衰减率
 REGULARIZATION_RATE = 0.0001 # 模型复杂度的正则化项在损失函数中的系数
 
 # 多层神经网络模型
-def train_model():
+def train_model(reg):
     # 输入
     x_i = tf.placeholder(tf.float32, shape=(None,INPUT_NODE), name='x-input')
     y_i = tf.placeholder(tf.float32, shape=(None,OUTPUT_NODE), name='y-input')
 
     # 隐藏层参数
-    # w1 = tf.Variable(tf.zeros([INPUT_NODE, LAYER1_NODE]))
-    # b1 = tf.Variable(tf.zeros([LAYER1_NODE]))
     w1 = tf.Variable(tf.truncated_normal([INPUT_NODE, LAYER1_NODE], stddev=0.1)) # truncated_normal 正态分布产生函数
     b1 = tf.Variable(tf.constant(0.1, shape=[LAYER1_NODE]))
 
     # 输出层参数
-    # W = tf.Variable(tf.zeros([LAYER1_NODE, OUTPUT_NODE]))
-    # b = tf.Variable(tf.zeros([OUTPUT_NODE]))
     W = tf.Variable(tf.truncated_normal([LAYER1_NODE, OUTPUT_NODE], stddev=0.1))
     b = tf.Variable(tf.constant(0.1, shape=[OUTPUT_NODE]))
 
@@ -57,26 +53,26 @@ def train_model():
     y_1 = tf.nn.relu(tf.matmul(x_i, w1)) + b1 # relu 激活函数去线性化
 
     # 输出层前向传播结果
-    #y = tf.nn.softmax(tf.matmul(y_1, W) + b) # softmax 将神经网络向前传播得到的结果转换为概率分布
+    # y = tf.nn.softmax(tf.matmul(y_1, W) + b) # softmax 将神经网络向前传播得到的结果转换为概率分布
     y = tf.matmul(y_1, W) + b
-
-    # L2正则化损失函数
-    regularizer = tf.contrib.layers.l2_regularizer(REGULARIZATION_RATE)
-
-    # 计算模型的正则化损失
-    regularization = regularizer(w1) + regularizer(W)
 
     # 损失函数
     # cross_entropy = -tf.reduce_sum(y_i * tf.log(y)) # 交叉熵
     # cross_entropy = tf.nn.softmax_cross_entropy_with_logits(labels=y_i, logits=y)
     cross_entropy = tf.nn.sparse_softmax_cross_entropy_with_logits(labels=tf.argmax(y_i, 1), logits=y)
+
     cross_entropy_mean = tf.reduce_mean(cross_entropy)
 
-    # 总损失等于交叉熵损失和正则化损失
-    loss = cross_entropy_mean + regularization
+    # 加入 L2 正则化
+    if reg:
+        regularizer = tf.contrib.layers.l2_regularizer(REGULARIZATION_RATE) # L2正则化损失函数
+        regularization = regularizer(w1) + regularizer(W) # 计算模型的L2正则化损失
+        loss = cross_entropy_mean + regularization # 总损失等于交叉熵损失和正则化损失
+    else :
+        loss = cross_entropy_mean
 
     # 优化方法
-    train_step = tf.train.GradientDescentOptimizer(learning_rate).minimize(cross_entropy_mean, global_step=global_step)
+    train_step = tf.train.GradientDescentOptimizer(learning_rate).minimize(loss, global_step=global_step)
 
     # 模型评估
     correct_prediction = tf.equal(tf.argmax(y,1), tf.argmax(y_i,1))
@@ -106,6 +102,9 @@ def train_model():
         # 正确率
         print(sess.run(accuracy, feed_dict={x_i: mnist.test.images, y_i: mnist.test.labels}))
 
-train_model()# 正确率 0.9125
+# train_model(False)# 正确率 0.9787
+
+train_model(True)
+
 
 
