@@ -1,5 +1,5 @@
 #coding:utf-8
-# mnist 数字识别 神经网络模型 加入一层隐藏层
+# mnist 数字识别 神经网络模型 （隐藏层 + 学习速率指数衰减）
 
 import tensorflow as tf
 from tensorflow.examples.tutorials.mnist import input_data
@@ -23,6 +23,7 @@ LAYER1_NODE = 500 # 隐藏层节点数（这里只加入一层有 500 个节点�
 BATCH_SIZE = 100 # 单次训练数据量（小批量）
 TRAINING_STEPS = 1000 # 训练轮数
 LEARNING_RATE_BASE = 0.005 # 基础学习速率
+LEARNING_RATE_DECAY = 0.99 # 学习率的衰减率
 
 # 多层神经网络模型
 def train_model():
@@ -42,11 +43,20 @@ def train_model():
     W = tf.Variable(tf.truncated_normal([LAYER1_NODE, OUTPUT_NODE], stddev=0.1))
     b = tf.Variable(tf.constant(0.1, shape=[OUTPUT_NODE]))
 
+    # 学习率指数衰减法
+    global_step = tf.Variable(0, trainable=False)
+    learning_rate = tf.train.exponential_decay(
+        LEARNING_RATE_BASE, # 基础学习率
+        global_step, # 当前迭代轮数
+        mnist.train.num_examples / BATCH_SIZE, # 过完所有训练数据的迭代轮数
+        LEARNING_RATE_DECAY # 学习率衰减速度
+    )
+
     # 隐藏层前向传播结果
     y_1 = tf.nn.relu(tf.matmul(x_i, w1)) + b1 # relu 激活函数去线性化
 
     # 输出层前向传播结果
-    # y = tf.nn.softmax(tf.matmul(y_1, W) + b) # softmax 将神经网络向前传播得到的结果转换为概率分布
+    #y = tf.nn.softmax(tf.matmul(y_1, W) + b) # softmax 将神经网络向前传播得到的结果转换为概率分布
     y = tf.matmul(y_1, W) + b
 
     # 损失函数
@@ -55,7 +65,7 @@ def train_model():
     cross_entropy = tf.nn.sparse_softmax_cross_entropy_with_logits(labels=tf.argmax(y_i, 1), logits=y)
 
     # 优化方法
-    train_step = tf.train.GradientDescentOptimizer(LEARNING_RATE_BASE).minimize(cross_entropy)
+    train_step = tf.train.GradientDescentOptimizer(learning_rate).minimize(cross_entropy, global_step=global_step)
 
     # 模型评估
     correct_prediction = tf.equal(tf.argmax(y,1), tf.argmax(y_i,1))
@@ -85,10 +95,6 @@ def train_model():
         # 正确率
         print(sess.run(accuracy, feed_dict={x_i: mnist.test.images, y_i: mnist.test.labels}))
 
-train_model()# 正确率 0.96 左右
-
-
-
-
+train_model()# 正确率 0.9125
 
 
