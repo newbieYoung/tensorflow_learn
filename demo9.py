@@ -69,6 +69,10 @@ def train_model(reg, decay, average):
         # tf.trainable_variables 返回的就是图上集合 GraphKeys.TRAINABLE_VARIABLES 中的元素，这个集合的元素就是所有没有指定（trainable=False）的参数
         variable_averages_op = variable_averages.apply(tf.trainable_variables())
         y_average = inference(x_i, variable_averages, w1, b1, W, b)
+
+        # 滑动平均不会改变变量本身的值，而是会维护一个影子变量来记录其滑动平均值；
+        # 因此在使用滑动平均模型时也需要计算非滑动平均模型的神经网络前向传播结果，并使用该结果计算损失函数；
+        # 但是计算正确率时需要使用滑动平均模型的神经网络前向传播结果。
     else:
         y_average = y
 
@@ -101,12 +105,11 @@ def train_model(reg, decay, average):
     if average:
         # 在训练神经网络模型时，每过一遍数据既需要通过反向传播来更新神经网络中的参数，还需要更新每个参数的滑动平均值；
         # 为了一次完成多个操作，Tensorflow 提供了 tf.control_dependencies 和 tf.group 两种机制（相互等价）
-        # train_op = tf.group(train_step, variable_averages_op)
-        with tf.control_dependencies([train_step, variable_averages_op]):
-            train_op = tf.no_op(name='train')
+        train_op = tf.group(train_step, variable_averages_op)
+        #with tf.control_dependencies([train_step, variable_averages_op]):
+            # train_op = tf.no_op(name='train')
     else:
         train_op = train_step
-
 
     # 模型评估
     correct_prediction = tf.equal(tf.argmax(y_average,1), tf.argmax(y_i,1))
