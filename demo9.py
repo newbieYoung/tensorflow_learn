@@ -27,7 +27,7 @@ LEARNING_RATE_DECAY = 0.99 # 学习率的衰减率
 REGULARIZATION_RATE = 0.0001 # 模型复杂度的正则化项在损失函数中的系数
 
 # 多层神经网络模型
-def train_model(reg):
+def train_model(reg,decay):
     # 输入
     x_i = tf.placeholder(tf.float32, shape=(None,INPUT_NODE), name='x-input')
     y_i = tf.placeholder(tf.float32, shape=(None,OUTPUT_NODE), name='y-input')
@@ -39,15 +39,6 @@ def train_model(reg):
     # 输出层参数
     W = tf.Variable(tf.truncated_normal([LAYER1_NODE, OUTPUT_NODE], stddev=0.1))
     b = tf.Variable(tf.constant(0.1, shape=[OUTPUT_NODE]))
-
-    # 学习率指数衰减法
-    global_step = tf.Variable(0, trainable=False)
-    learning_rate = tf.train.exponential_decay(
-        LEARNING_RATE_BASE, # 基础学习率
-        global_step, # 当前迭代轮数
-        mnist.train.num_examples / BATCH_SIZE, # 过完所有训练数据的迭代轮数
-        LEARNING_RATE_DECAY # 学习率衰减速度
-    )
 
     # 隐藏层前向传播结果
     y_1 = tf.nn.relu(tf.matmul(x_i, w1)) + b1 # relu 激活函数去线性化
@@ -64,15 +55,26 @@ def train_model(reg):
     cross_entropy_mean = tf.reduce_mean(cross_entropy)
 
     # 加入 L2 正则化
-    if reg:
+    if reg :
         regularizer = tf.contrib.layers.l2_regularizer(REGULARIZATION_RATE) # L2正则化损失函数
         regularization = regularizer(w1) + regularizer(W) # 计算模型的L2正则化损失
         loss = cross_entropy_mean + regularization # 总损失等于交叉熵损失和正则化损失
     else :
         loss = cross_entropy_mean
 
-    # 优化方法
-    train_step = tf.train.GradientDescentOptimizer(learning_rate).minimize(loss, global_step=global_step)
+    # 加入 学习速率指数衰减
+    if decay :
+        global_step = tf.Variable(0, trainable=False)
+        learning_rate = tf.train.exponential_decay(
+            LEARNING_RATE_BASE,  # 基础学习率
+            global_step,  # 当前迭代轮数
+            mnist.train.num_examples / BATCH_SIZE,  # 过完所有训练数据的迭代轮数
+            LEARNING_RATE_DECAY  # 学习率衰减速度
+        )
+        train_step = tf.train.GradientDescentOptimizer(learning_rate).minimize(loss, global_step=global_step)
+    else :
+        learning_rate = LEARNING_RATE_BASE
+        train_step = tf.train.GradientDescentOptimizer(learning_rate).minimize(loss)
 
     # 模型评估
     correct_prediction = tf.equal(tf.argmax(y,1), tf.argmax(y_i,1))
@@ -102,9 +104,8 @@ def train_model(reg):
         # 正确率
         print(sess.run(accuracy, feed_dict={x_i: mnist.test.images, y_i: mnist.test.labels}))
 
-# train_model(False)# 正确率 0.9787
-
-train_model(True)
+# train_model(False,False)# 正确率 0.9787
+train_model(True,True)
 
 
 
