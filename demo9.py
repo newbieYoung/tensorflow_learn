@@ -1,5 +1,5 @@
 #coding:utf-8
-# mnist 数字识别 神经网络模型 （隐藏层 + 学习速率指数衰减 + L2正则化）
+# mnist 数字识别 神经网络模型 （隐藏层 + 学习速率指数衰减 + L2正则化 + 滑动平均模型）
 
 import tensorflow as tf
 from tensorflow.examples.tutorials.mnist import input_data
@@ -25,9 +25,22 @@ TRAINING_STEPS = 5000 # 训练轮数
 LEARNING_RATE_BASE = 0.8 # 基础学习速率
 LEARNING_RATE_DECAY = 0.99 # 学习率的衰减率
 REGULARIZATION_RATE = 0.0001 # 模型复杂度的正则化项在损失函数中的系数
+MOVING_AVERAGE_DECAY = 0.99 # 滑动平均衰减率
+
+# 给定神经网络的输入和所有相关参数，计算神经网络的前向传播结果
+def inference(input_tensor, avg_class, weight1, biases1, weight2, biases2):
+    if avg_class == None:
+        # 隐藏层前向传播结果
+        y_1 = tf.nn.relu(tf.matmul(input_tensor, weight1)) + biases1  # relu 激活函数去线性化
+        # 输出层前向传播结果
+        y = tf.matmul(y_1, weight2) + biases2
+    else:
+        y_1 = tf.nn.relu(tf.matmul(input_tensor, avg_class.average(weight1)) + avg_class.average(biases1))
+        y = tf.matmul(y_1, avg_class.average(weight2)) + avg_class.average(biases2)
+    return y
 
 # 多层神经网络模型
-def train_model(reg,decay):
+def train_model(reg, decay, average):
     # 输入
     x_i = tf.placeholder(tf.float32, shape=(None,INPUT_NODE), name='x-input')
     y_i = tf.placeholder(tf.float32, shape=(None,OUTPUT_NODE), name='y-input')
@@ -40,45 +53,64 @@ def train_model(reg,decay):
     W = tf.Variable(tf.truncated_normal([LAYER1_NODE, OUTPUT_NODE], stddev=0.1))
     b = tf.Variable(tf.constant(0.1, shape=[OUTPUT_NODE]))
 
-    # 隐藏层前向传播结果
-    y_1 = tf.nn.relu(tf.matmul(x_i, w1)) + b1 # relu 激活函数去线性化
+    # 训练轮数变量，这个变量不需要计算滑动平均值，所以这里指定这个变量为不可训练变量（trainable=False）
+    # 在使用 Tensorflow 训练神经网络时，一般会将代表训练轮数的变量指定为不可训练的参数
+    global_step = tf.Variable(0, trainable=False)
 
-    # 输出层前向传播结果
-    # y = tf.nn.softmax(tf.matmul(y_1, W) + b) # softmax 将神经网络向前传播得到的结果转换为概率分布
-    y = tf.matmul(y_1, W) + b
+    # 神经网络前向传播
+    y = inference(x_i, None, w1, b1, W, b)
+
+    # 加入 滑动平均模型
+    if average:
+        # 根据滑动平均衰减率和训练轮数，初始化滑动平均类（训练轮数可以加快训练早期变量的更新速度）
+        variable_averages = tf.train.ExponentialMovingAverage(MOVING_AVERAGE_DECAY, global_step)
+
+        # 在所有代表神经网络参数的变量上使用滑动平均模型，其它辅助变量则不需要
+        # tf.trainable_variables 返回的就是图上集合 GraphKeys.TRAINABLE_VARIABLES 中的元素，这个集合的元素就是所有没有指定（trainable=False）的参数
+        variable_averages_op = variable_averages.apply(tf.trainable_variables())
+        y_average = inference(x_i, variable_averages, w1, b1, W, b)
+    else:
+        y_average = y
 
     # 损失函数
-    # cross_entropy = -tf.reduce_sum(y_i * tf.log(y)) # 交叉熵
-    # cross_entropy = tf.nn.softmax_cross_entropy_with_logits(labels=y_i, logits=y)
-    cross_entropy = tf.nn.sparse_softmax_cross_entropy_with_logits(labels=tf.argmax(y_i, 1), logits=y)
-
+    cross_entropy = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=y, labels=tf.argmax(y_i, 1))
     cross_entropy_mean = tf.reduce_mean(cross_entropy)
 
     # 加入 L2 正则化
-    if reg :
+    if reg:
         regularizer = tf.contrib.layers.l2_regularizer(REGULARIZATION_RATE) # L2正则化损失函数
         regularization = regularizer(w1) + regularizer(W) # 计算模型的L2正则化损失
         loss = cross_entropy_mean + regularization # 总损失等于交叉熵损失和正则化损失
-    else :
+    else:
         loss = cross_entropy_mean
 
     # 加入 学习速率指数衰减
-    if decay :
-        global_step = tf.Variable(0, trainable=False)
+    if decay:
         learning_rate = tf.train.exponential_decay(
             LEARNING_RATE_BASE,  # 基础学习率
             global_step,  # 当前迭代轮数
             mnist.train.num_examples / BATCH_SIZE,  # 过完所有训练数据的迭代轮数
             LEARNING_RATE_DECAY  # 学习率衰减速度
         )
-        train_step = tf.train.GradientDescentOptimizer(learning_rate).minimize(loss, global_step=global_step)
-    else :
+    else:
         learning_rate = LEARNING_RATE_BASE
-        train_step = tf.train.GradientDescentOptimizer(learning_rate).minimize(loss)
+
+    train_step = tf.train.GradientDescentOptimizer(learning_rate).minimize(loss, global_step=global_step)
+
+    # 加入 滑动平均模型
+    if average:
+        # 在训练神经网络模型时，每过一遍数据既需要通过反向传播来更新神经网络中的参数，还需要更新每个参数的滑动平均值；
+        # 为了一次完成多个操作，Tensorflow 提供了 tf.control_dependencies 和 tf.group 两种机制（相互等价）
+        # train_op = tf.group(train_step, variable_averages_op)
+        with tf.control_dependencies([train_step, variable_averages_op]):
+            train_op = tf.no_op(name='train')
+    else:
+        train_op = train_step
+
 
     # 模型评估
-    correct_prediction = tf.equal(tf.argmax(y,1), tf.argmax(y_i,1))
-    accuracy = tf.reduce_mean(tf.cast(correct_prediction, 'float'))
+    correct_prediction = tf.equal(tf.argmax(y_average,1), tf.argmax(y_i,1))
+    accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
 
     # 变量初始化
     init_op = tf.global_variables_initializer()
@@ -86,26 +118,38 @@ def train_model(reg,decay):
     with tf.Session() as sess :
         sess.run(init_op)
 
+        # 验证数据，一般在神经网络训练过程中会通过验证数据来大致判断停止条件和评判训练的结果
+        validate_feed = {
+            x_i: mnist.validation.images,
+            y_i: mnist.validation.labels
+        }
+
+        # 测试数据，在真实的应用中，这部分数据在训练时时不可见的，这个数据只是作为模型优劣的最后评判标准
+        test_feed = {
+            x_i: mnist.test.images,
+            y_i: mnist.test.labels
+        }
+
         # 设定训练的轮数
         for i in range(TRAINING_STEPS) :
 
             # 每次选取 batch_size 个样本进行训练
-            start = (i * BATCH_SIZE) % mnist.train.num_examples
-            end = min(start + BATCH_SIZE, mnist.train.num_examples)
+            xs,ys = mnist.train.next_batch(BATCH_SIZE)
 
             # 通过选取的样本训练神经网络并更新参数
-            sess.run(train_step, feed_dict={x_i: mnist.train.images[start:end], y_i: mnist.train.labels[start:end]})
+            sess.run(train_op, feed_dict={x_i: xs, y_i: ys})
 
-            # 每隔一段时间计算在所有训练数据上的交叉熵并输出
-            # if i % 200 == 0 :
-            #    total_cross_entropy = sess.run(cross_entropy, feed_dict={x_i:mnist.train.images,y_i:mnist.train.labels})
-            #    print('After %d training steps, cross entropy on all data is %g' % (i, total_cross_entropy))
+            # 每隔一段时间计算在验证数据上的交叉熵并输出
+            # 当验证数据比较大时，需要将其划分为更小的 batch ，否则会导致计算时间过长甚至发生内存溢出
+            if i % 1000 == 0 :
+                validate_acc = sess.run(accuracy, feed_dict=validate_feed)
+                print('After %d training steps, validation accuracy is %g' % (i, validate_acc))
 
         # 正确率
-        print(sess.run(accuracy, feed_dict={x_i: mnist.test.images, y_i: mnist.test.labels}))
+        print(sess.run(accuracy, feed_dict=test_feed))
 
-# train_model(False,False)# 正确率 0.9787
-train_model(True,True)
+# train_model(False, False, False)# 正确率 0.9787
+train_model(True, True, True)
 
 
 
