@@ -1,13 +1,13 @@
-#coding:utf-8
+# coding:utf-8
 # 会话拥有并管理程序运行时的所有资源
 
 import tensorflow as tf
 
-mat1 = tf.constant([[3,3]])
+mat1 = tf.constant([[3, 3]])
 mat2 = tf.constant([[2],
-					[2]])
+                    [2]])
 
-product = tf.matmul(mat1,mat2)
+product = tf.matmul(mat1, mat2)
 
 # 模式1
 # 当程序因为异常退出时，关闭会话的函数可能就不会被执行从而导致资源泄漏

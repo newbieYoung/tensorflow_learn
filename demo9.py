@@ -1,4 +1,4 @@
-#coding:utf-8
+# coding:utf-8
 # mnist 数字识别 神经网络模型 （隐藏层 + 学习速率指数衰减 + L2正则化 + 滑动平均模型）
 
 import tensorflow as tf
@@ -8,24 +8,25 @@ from tensorflow.examples.tutorials.mnist import input_data
 mnist = input_data.read_data_sets('/Users/young/Documents/MNIST_data/', one_hot=True)
 
 # 输出 MNIST 数据集信息
-#print('training data size : ', mnist.train.num_examples)
-#print('testing data size : ', mnist.test.num_examples)
-#print('example traning data :', mnist.train.images[0]) # 数字图片像素数据
-#print('example traning data :', mnist.train.labels[0]) # 数字图片类别数据
+# print('training data size : ', mnist.train.num_examples)
+# print('testing data size : ', mnist.test.num_examples)
+# print('example traning data :', mnist.train.images[0]) # 数字图片像素数据
+# print('example traning data :', mnist.train.labels[0]) # 数字图片类别数据
 print('--- mnist data ready! ---')
 
 # MNIST 数据集相关的常数
-INPUT_NODE = 784 # 输入层节点数（28 * 28 共 784 个像素）
-OUTPUT_NODE = 10 # 输出层节点数（类别数目，因为要区分 0-9 这10个数字，因此这里的输出层节点数为10）
+INPUT_NODE = 784  # 输入层节点数（28 * 28 共 784 个像素）
+OUTPUT_NODE = 10  # 输出层节点数（类别数目，因为要区分 0-9 这10个数字，因此这里的输出层节点数为10）
 
 # 配置神经网络的参数
-LAYER1_NODE = 500 # 隐藏层节点数（这里只加入一层有 500 个节点的隐藏层）
-BATCH_SIZE = 100 # 单次训练数据量（小批量）
-TRAINING_STEPS = 5000 # 训练轮数
-LEARNING_RATE_BASE = 0.8 # 基础学习速率
-LEARNING_RATE_DECAY = 0.99 # 学习率的衰减率
-REGULARIZATION_RATE = 0.0001 # 模型复杂度的正则化项在损失函数中的系数
-MOVING_AVERAGE_DECAY = 0.99 # 滑动平均衰减率
+LAYER1_NODE = 500  # 隐藏层节点数（这里只加入一层有 500 个节点的隐藏层）
+BATCH_SIZE = 100  # 单次训练数据量（小批量）
+TRAINING_STEPS = 5000  # 训练轮数
+LEARNING_RATE_BASE = 0.8  # 基础学习速率
+LEARNING_RATE_DECAY = 0.99  # 学习率的衰减率
+REGULARIZATION_RATE = 0.0001  # 模型复杂度的正则化项在损失函数中的系数
+MOVING_AVERAGE_DECAY = 0.99  # 滑动平均衰减率
+
 
 # 给定神经网络的输入和所有相关参数，计算神经网络的前向传播结果
 def inference(input_tensor, avg_class, weight1, biases1, weight2, biases2):
@@ -39,14 +40,15 @@ def inference(input_tensor, avg_class, weight1, biases1, weight2, biases2):
         y = tf.matmul(y_1, avg_class.average(weight2)) + avg_class.average(biases2)
     return y
 
+
 # 多层神经网络模型
 def train_model(reg, decay, average):
     # 输入
-    x_i = tf.placeholder(tf.float32, shape=(None,INPUT_NODE), name='x-input')
-    y_i = tf.placeholder(tf.float32, shape=(None,OUTPUT_NODE), name='y-input')
+    x_i = tf.placeholder(tf.float32, shape=(None, INPUT_NODE), name='x-input')
+    y_i = tf.placeholder(tf.float32, shape=(None, OUTPUT_NODE), name='y-input')
 
     # 隐藏层参数
-    w1 = tf.Variable(tf.truncated_normal([INPUT_NODE, LAYER1_NODE], stddev=0.1)) # truncated_normal 正态分布产生函数
+    w1 = tf.Variable(tf.truncated_normal([INPUT_NODE, LAYER1_NODE], stddev=0.1))  # truncated_normal 正态分布产生函数
     b1 = tf.Variable(tf.constant(0.1, shape=[LAYER1_NODE]))
 
     # 输出层参数
@@ -82,9 +84,9 @@ def train_model(reg, decay, average):
 
     # 加入 L2 正则化
     if reg:
-        regularizer = tf.contrib.layers.l2_regularizer(REGULARIZATION_RATE) # L2正则化损失函数
-        regularization = regularizer(w1) + regularizer(W) # 计算模型的L2正则化损失
-        loss = cross_entropy_mean + regularization # 总损失等于交叉熵损失和正则化损失
+        regularizer = tf.contrib.layers.l2_regularizer(REGULARIZATION_RATE)  # L2正则化损失函数
+        regularization = regularizer(w1) + regularizer(W)  # 计算模型的L2正则化损失
+        loss = cross_entropy_mean + regularization  # 总损失等于交叉熵损失和正则化损失
     else:
         loss = cross_entropy_mean
 
@@ -106,19 +108,19 @@ def train_model(reg, decay, average):
         # 在训练神经网络模型时，每过一遍数据既需要通过反向传播来更新神经网络中的参数，还需要更新每个参数的滑动平均值；
         # 为了一次完成多个操作，Tensorflow 提供了 tf.control_dependencies 和 tf.group 两种机制（相互等价）
         train_op = tf.group(train_step, variable_averages_op)
-        #with tf.control_dependencies([train_step, variable_averages_op]):
-            # train_op = tf.no_op(name='train')
+        # with tf.control_dependencies([train_step, variable_averages_op]):
+        # train_op = tf.no_op(name='train')
     else:
         train_op = train_step
 
     # 模型评估
-    correct_prediction = tf.equal(tf.argmax(y_average,1), tf.argmax(y_i,1))
+    correct_prediction = tf.equal(tf.argmax(y_average, 1), tf.argmax(y_i, 1))
     accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
 
     # 变量初始化
     init_op = tf.global_variables_initializer()
 
-    with tf.Session() as sess :
+    with tf.Session() as sess:
         sess.run(init_op)
 
         # 验证数据，一般在神经网络训练过程中会通过验证数据来大致判断停止条件和评判训练的结果
@@ -134,25 +136,23 @@ def train_model(reg, decay, average):
         }
 
         # 设定训练的轮数
-        for i in range(TRAINING_STEPS) :
+        for i in range(TRAINING_STEPS):
 
             # 每次选取 batch_size 个样本进行训练
-            xs,ys = mnist.train.next_batch(BATCH_SIZE)
+            xs, ys = mnist.train.next_batch(BATCH_SIZE)
 
             # 通过选取的样本训练神经网络并更新参数
             sess.run(train_op, feed_dict={x_i: xs, y_i: ys})
 
             # 每隔一段时间计算在验证数据上的交叉熵并输出
             # 当验证数据比较大时，需要将其划分为更小的 batch ，否则会导致计算时间过长甚至发生内存溢出
-            if i % 1000 == 0 :
+            if i % 1000 == 0:
                 validate_acc = sess.run(accuracy, feed_dict=validate_feed)
                 print('After %d training steps, validation accuracy is %g' % (i, validate_acc))
 
         # 正确率
         print(sess.run(accuracy, feed_dict=test_feed))
 
+
 # train_model(False, False, False)# 正确率 0.9787
 train_model(True, True, True)
-
-
-
