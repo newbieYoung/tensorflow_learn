@@ -25,52 +25,61 @@ LEARNING_RATE_BASE = 0.01 # 基础学习速率
 
 # 单层神经网络模型
 def train_model():
-    # 输入
-    x_i = tf.placeholder(tf.float32, shape=(None,INPUT_NODE), name='x-input')
-    y_i = tf.placeholder(tf.float32, shape=(None,OUTPUT_NODE), name='y-input')
 
-    # 权重值 和 偏置量
-    # W = tf.Variable(tf.zeros([INPUT_NODE,OUTPUT_NODE]))
-    # b = tf.Variable(tf.zeros([OUTPUT_NODE]))
-    W = tf.Variable(tf.truncated_normal([INPUT_NODE, OUTPUT_NODE], stddev=0.1))  # truncated_normal 正态分布产生函数
-    b = tf.Variable(tf.constant(0.1, shape=[OUTPUT_NODE]))
+    with tf.name_scope('input'):
+        # 输入
+        x_i = tf.placeholder(tf.float32, shape=(None,INPUT_NODE), name='x-input')
+        y_i = tf.placeholder(tf.float32, shape=(None,OUTPUT_NODE), name='y-input')
 
-    # 输出
-    y = tf.nn.softmax(tf.matmul(x_i,W) + b) # softmax 将神经网络向前传播得到的结果转换为概率分布
+    with tf.name_scope('layer1'):
+        # 权重值 和 偏置量
+        # W = tf.Variable(tf.zeros([INPUT_NODE,OUTPUT_NODE]))
+        # b = tf.Variable(tf.zeros([OUTPUT_NODE]))
+        W = tf.Variable(tf.truncated_normal([INPUT_NODE, OUTPUT_NODE], stddev=0.1))  # truncated_normal 正态分布产生函数
+        b = tf.Variable(tf.constant(0.1, shape=[OUTPUT_NODE]))
 
-    # 损失函数
-    cross_entropy = -tf.reduce_sum(y_i * tf.log(y)) # 交叉熵
+        # 输出
+        y = tf.nn.softmax(tf.matmul(x_i,W) + b) # softmax 将神经网络向前传播得到的结果转换为概率分布
 
-    # 优化方法
-    train_step = tf.train.GradientDescentOptimizer(LEARNING_RATE_BASE).minimize(cross_entropy)
+    with tf.name_scope('loss_function'):
+        # 损失函数
+        cross_entropy = -tf.reduce_sum(y_i * tf.log(y)) # 交叉熵
 
-    # 模型评估
-    correct_prediction = tf.equal(tf.argmax(y,1), tf.argmax(y_i,1))
-    accuracy = tf.reduce_mean(tf.cast(correct_prediction, 'float'))
+    with tf.name_scope('train_step'):
+        # 优化方法
+        train_step = tf.train.GradientDescentOptimizer(LEARNING_RATE_BASE).minimize(cross_entropy)
 
-    # 变量初始化
-    init_op = tf.global_variables_initializer()
+        # 模型评估
+        correct_prediction = tf.equal(tf.argmax(y,1), tf.argmax(y_i,1))
+        accuracy = tf.reduce_mean(tf.cast(correct_prediction, 'float'))
 
-    with tf.Session() as sess :
-        sess.run(init_op)
+        # 变量初始化
+        init_op = tf.global_variables_initializer()
 
-        # 设定训练的轮数
-        for i in range(TRAINING_STEPS) :
+        with tf.Session() as sess :
+            sess.run(init_op)
 
-            # 每次选取 batch_size 个样本进行训练
-            start = (i * BATCH_SIZE) % mnist.train.num_examples
-            end = min(start + BATCH_SIZE, mnist.train.num_examples)
+            # 设定训练的轮数
+            for i in range(TRAINING_STEPS) :
 
-            # 通过选取的样本训练神经网络并更新参数
-            sess.run(train_step, feed_dict={x_i: mnist.train.images[start:end], y_i: mnist.train.labels[start:end]})
+                # 每次选取 batch_size 个样本进行训练
+                start = (i * BATCH_SIZE) % mnist.train.num_examples
+                end = min(start + BATCH_SIZE, mnist.train.num_examples)
 
-            # 每隔一段时间计算在所有训练数据上的交叉熵并输出
-            # if i % 200 == 0 :
-            #    total_cross_entropy = sess.run(cross_entropy, feed_dict={x_i:mnist.train.images,y_i:mnist.train.labels})
-            #    print('After %d training steps, cross entropy on all data is %g' % (i, total_cross_entropy))
+                # 通过选取的样本训练神经网络并更新参数
+                sess.run(train_step, feed_dict={x_i: mnist.train.images[start:end], y_i: mnist.train.labels[start:end]})
 
-        # 正确率
-        print(sess.run(accuracy, feed_dict={x_i: mnist.test.images, y_i: mnist.test.labels}))
+                # 每隔一段时间计算在所有训练数据上的交叉熵并输出
+                # if i % 200 == 0 :
+                #    total_cross_entropy = sess.run(cross_entropy, feed_dict={x_i:mnist.train.images,y_i:mnist.train.labels})
+                #    print('After %d training steps, cross entropy on all data is %g' % (i, total_cross_entropy))
+
+            # 正确率
+            print(sess.run(accuracy, feed_dict={x_i: mnist.test.images, y_i: mnist.test.labels}))
+
+    #将当前的计算图写入日志
+    writer = tf.summary.FileWriter('./log/demo8', tf.get_default_graph())
+    writer.close()
 
 train_model()# 正确率 0.92左右
 
