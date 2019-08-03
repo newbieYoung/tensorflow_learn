@@ -19,9 +19,10 @@ INPUT_NODE = 784 # 输入层节点数（28 * 28 共 784 个像素）
 OUTPUT_NODE = 10 # 输出层节点数（类别数目，因为要区分 0-9 这10个数字，因此这里的输出层节点数为10）
 
 # 配置神经网络的参数
+LAYER1_NODE = 500 # 隐藏层节点数
 BATCH_SIZE = 100 # 单次训练数据量（小批量）
 TRAINING_STEPS = 5000 # 训练轮数
-LEARNING_RATE_BASE = 0.01 # 基础学习速率
+LEARNING_RATE_BASE = 0.8 # 基础学习速率
 
 # 单层神经网络模型
 def train_model():
@@ -32,20 +33,28 @@ def train_model():
         y_i = tf.placeholder(tf.float32, shape=(None,OUTPUT_NODE), name='y-input')
 
     with tf.name_scope('layer1'):
+        # 隐藏层参数
+        w1 = tf.Variable(tf.truncated_normal([INPUT_NODE, LAYER1_NODE], stddev=0.1))  # truncated_normal 正态分布产生函数
+        b1 = tf.Variable(tf.constant(0.1, shape=[LAYER1_NODE]))
+
+        y_1 = tf.nn.relu(tf.matmul(x_i, w1)) + b1  # relu 激活函数去线性化
+
+    with tf.name_scope('layer2'):
         # 权重值 和 偏置量
-        W = tf.Variable(tf.truncated_normal([INPUT_NODE, OUTPUT_NODE], stddev=0.1))  # truncated_normal 正态分布产生函数
+        W = tf.Variable(tf.truncated_normal([LAYER1_NODE, OUTPUT_NODE], stddev=0.1))  # truncated_normal 正态分布产生函数
         b = tf.Variable(tf.constant(0.1, shape=[OUTPUT_NODE]))
 
         # 输出
-        y = tf.nn.softmax(tf.matmul(x_i,W) + b) # softmax 将神经网络向前传播得到的结果转换为概率分布
+        y = tf.matmul(y_1,W) + b
 
     with tf.name_scope('loss_function'):
         # 损失函数
-        cross_entropy = -tf.reduce_sum(y_i * tf.log(y)) # 交叉熵
+        cross_entropy = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=y, labels=tf.argmax(y_i, 1))
+        cross_entropy_mean = tf.reduce_mean(cross_entropy)
 
     with tf.name_scope('train_step'):
         # 优化方法
-        train_step = tf.train.GradientDescentOptimizer(LEARNING_RATE_BASE).minimize(cross_entropy)
+        train_step = tf.train.GradientDescentOptimizer(LEARNING_RATE_BASE).minimize(cross_entropy_mean)
 
         # 模型评估
         correct_prediction = tf.equal(tf.argmax(y,1), tf.argmax(y_i,1))
@@ -76,11 +85,10 @@ def train_model():
             print(sess.run(accuracy, feed_dict={x_i: mnist.test.images, y_i: mnist.test.labels}))
 
     #将当前的计算图写入日志
-    writer = tf.summary.FileWriter('./log/demo8', tf.get_default_graph())
+    writer = tf.summary.FileWriter('./log/demo8-1', tf.get_default_graph())
     writer.close()
 
 train_model()# 正确率 0.92左右
-
 
 
 
