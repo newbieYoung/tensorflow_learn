@@ -33,8 +33,6 @@ def train_model():
 
     with tf.name_scope('layer1'):
         # 权重值 和 偏置量
-        # W = tf.Variable(tf.zeros([INPUT_NODE,OUTPUT_NODE]))
-        # b = tf.Variable(tf.zeros([OUTPUT_NODE]))
         W = tf.Variable(tf.truncated_normal([INPUT_NODE, OUTPUT_NODE], stddev=0.1))  # truncated_normal 正态分布产生函数
         b = tf.Variable(tf.constant(0.1, shape=[OUTPUT_NODE]))
 
