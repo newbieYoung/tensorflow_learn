@@ -19,7 +19,14 @@ ele_mul = v2 * v3
 # tf.matmul 矩阵相乘
 mat_mul = tf.matmul(v2, v3)
 
+mean_1 = tf.reduce_mean(v1)
+mean_2 = tf.reduce_mean(v1, 0)
+mean_3 = tf.reduce_mean(v1, 1)
+
 with tf.Session() as sess:
+    print(sess.run(mean_1))
+    print(sess.run(mean_2))
+    print(sess.run(mean_3))
     print(sess.run(log))
     print(sess.run(clip))
     print(sess.run(ele_mul))
