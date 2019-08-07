@@ -8,10 +8,10 @@ from tensorflow.examples.tutorials.mnist import input_data
 mnist = input_data.read_data_sets('/Users/young/Documents/MNIST_data/', one_hot=True)
 
 # 输出 MNIST 数据集信息
-# print('training data size : ', mnist.train.num_examples)
-# print('testing data size : ', mnist.test.num_examples)
-# print('example traning data :', mnist.train.images[0]) # 数字图片像素数据
-# print('example traning data :', mnist.train.labels[0]) # 数字图片类别数据
+#print('training data size : ', mnist.train.num_examples)
+#print('testing data size : ', mnist.test.num_examples)
+#print('example traning data :', mnist.train.images[0]) # 数字图片像素数据
+#print('example traning data :', mnist.train.labels[0]) # 数字图片类别数据
 print('--- mnist data ready! ---')
 
 # MNIST 数据集相关的常数
@@ -23,9 +23,9 @@ BATCH_SIZE = 100  # 单次训练数据量（小批量）
 TRAINING_STEPS = 5000  # 训练轮数
 LEARNING_RATE_BASE = 0.01  # 基础学习速率
 
-
 # 单层神经网络模型
 def train_model():
+
     with tf.name_scope('input'):
         # 输入
         x_i = tf.placeholder(tf.float32, shape=(None,INPUT_NODE), name='x-input')
@@ -78,6 +78,5 @@ def train_model():
     #将当前的计算图写入日志
     writer = tf.summary.FileWriter('./log/demo8', tf.get_default_graph())
     writer.close()
-
 
 train_model()  # 正确率 0.92左右
