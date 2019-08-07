@@ -1,5 +1,5 @@
 #coding:utf-8
-# mnist 数字识别 单层神经网络 + 隐藏层
+# mnist 数字识别 单层神经网络 + 隐藏层 + 正则化
 
 import tensorflow as tf
 from tensorflow.examples.tutorials.mnist import input_data
@@ -23,6 +23,7 @@ LAYER1_NODE = 500 # 隐藏层节点数
 BATCH_SIZE = 100 # 单次训练数据量（小批量）
 TRAINING_STEPS = 5000 # 训练轮数
 LEARNING_RATE_BASE = 0.8 # 基础学习速率
+REGULARIZATION_RATE = 0.0001 # 模型复杂度的正则化项在损失函数中的系数
 
 # 单层神经网络模型
 def train_model():
@@ -52,9 +53,14 @@ def train_model():
         cross_entropy = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=y, labels=tf.argmax(y_i, 1))
         cross_entropy_mean = tf.reduce_mean(cross_entropy)
 
+        regularizer = tf.contrib.layers.l2_regularizer(REGULARIZATION_RATE)  # L2正则化损失函数
+        regularization = regularizer(w1) + regularizer(W)  # 计算模型的L2正则化损失
+
+        loss = cross_entropy_mean + regularization  # 总损失等于交叉熵损失和正则化损失
+
     with tf.name_scope('train_step'):
         # 优化方法
-        train_step = tf.train.GradientDescentOptimizer(LEARNING_RATE_BASE).minimize(cross_entropy_mean)
+        train_step = tf.train.GradientDescentOptimizer(LEARNING_RATE_BASE).minimize(loss)
 
         # 模型评估
         correct_prediction = tf.equal(tf.argmax(y,1), tf.argmax(y_i,1))
@@ -85,7 +91,7 @@ def train_model():
             print(sess.run(accuracy, feed_dict={x_i: mnist.test.images, y_i: mnist.test.labels}))
 
     #将当前的计算图写入日志
-    writer = tf.summary.FileWriter('./log/demo8-1', tf.get_default_graph())
+    writer = tf.summary.FileWriter('./log/demo8-2', tf.get_default_graph())
     writer.close()
 
 train_model()# 正确率 0.92左右
