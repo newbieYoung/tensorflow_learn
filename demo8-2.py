@@ -1,5 +1,5 @@
-# coding:utf-8
-# mnist 数字识别 单层神经网络模型
+#coding:utf-8
+# mnist 数字识别 单层神经网络 + 隐藏层 + 正则化
 
 import tensorflow as tf
 from tensorflow.examples.tutorials.mnist import input_data
@@ -8,44 +8,59 @@ from tensorflow.examples.tutorials.mnist import input_data
 mnist = input_data.read_data_sets('/Users/young/Documents/MNIST_data/', one_hot=True)
 
 # 输出 MNIST 数据集信息
-# print('training data size : ', mnist.train.num_examples)
-# print('testing data size : ', mnist.test.num_examples)
-# print('example traning data :', mnist.train.images[0]) # 数字图片像素数据
-# print('example traning data :', mnist.train.labels[0]) # 数字图片类别数据
+#print('training data size : ', mnist.train.num_examples)
+#print('testing data size : ', mnist.test.num_examples)
+#print('example traning data :', mnist.train.images[0]) # 数字图片像素数据
+#print('example traning data :', mnist.train.labels[0]) # 数字图片类别数据
 print('--- mnist data ready! ---')
 
 # MNIST 数据集相关的常数
-INPUT_NODE = 784  # 输入层节点数（28 * 28 共 784 个像素）
-OUTPUT_NODE = 10  # 输出层节点数（类别数目，因为要区分 0-9 这10个数字，因此这里的输出层节点数为10）
+INPUT_NODE = 784 # 输入层节点数（28 * 28 共 784 个像素）
+OUTPUT_NODE = 10 # 输出层节点数（类别数目，因为要区分 0-9 这10个数字，因此这里的输出层节点数为10）
 
 # 配置神经网络的参数
-BATCH_SIZE = 100  # 单次训练数据量（小批量）
-TRAINING_STEPS = 5000  # 训练轮数
-LEARNING_RATE_BASE = 0.01  # 基础学习速率
-
+LAYER1_NODE = 500 # 隐藏层节点数
+BATCH_SIZE = 100 # 单次训练数据量（小批量）
+TRAINING_STEPS = 5000 # 训练轮数
+LEARNING_RATE_BASE = 0.8 # 基础学习速率
+REGULARIZATION_RATE = 0.0001 # 模型复杂度的正则化项在损失函数中的系数
 
 # 单层神经网络模型
 def train_model():
+
     with tf.name_scope('input'):
         # 输入
         x_i = tf.placeholder(tf.float32, shape=(None,INPUT_NODE), name='x-input')
         y_i = tf.placeholder(tf.float32, shape=(None,OUTPUT_NODE), name='y-input')
 
     with tf.name_scope('layer1'):
+        # 隐藏层参数
+        w1 = tf.Variable(tf.truncated_normal([INPUT_NODE, LAYER1_NODE], stddev=0.1))  # truncated_normal 正态分布产生函数
+        b1 = tf.Variable(tf.constant(0.1, shape=[LAYER1_NODE]))
+
+        y_1 = tf.nn.relu(tf.matmul(x_i, w1)) + b1  # relu 激活函数去线性化
+
+    with tf.name_scope('layer2'):
         # 权重值 和 偏置量
-        W = tf.Variable(tf.truncated_normal([INPUT_NODE, OUTPUT_NODE], stddev=0.1))  # truncated_normal 正态分布产生函数
+        W = tf.Variable(tf.truncated_normal([LAYER1_NODE, OUTPUT_NODE], stddev=0.1))  # truncated_normal 正态分布产生函数
         b = tf.Variable(tf.constant(0.1, shape=[OUTPUT_NODE]))
 
         # 输出
-        y = tf.nn.softmax(tf.matmul(x_i,W) + b) # softmax 将神经网络向前传播得到的结果转换为概率分布
+        y = tf.matmul(y_1,W) + b
 
     with tf.name_scope('loss_function'):
         # 损失函数
-        cross_entropy = -tf.reduce_sum(y_i * tf.log(y)) # 交叉熵
+        cross_entropy = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=y, labels=tf.argmax(y_i, 1))
+        cross_entropy_mean = tf.reduce_mean(cross_entropy)
+
+        regularizer = tf.contrib.layers.l2_regularizer(REGULARIZATION_RATE)  # L2正则化损失函数
+        regularization = regularizer(w1) + regularizer(W)  # 计算模型的L2正则化损失
+
+        loss = cross_entropy_mean + regularization  # 总损失等于交叉熵损失和正则化损失
 
     with tf.name_scope('train_step'):
         # 优化方法
-        train_step = tf.train.GradientDescentOptimizer(LEARNING_RATE_BASE).minimize(cross_entropy)
+        train_step = tf.train.GradientDescentOptimizer(LEARNING_RATE_BASE).minimize(loss)
 
         # 模型评估
         correct_prediction = tf.equal(tf.argmax(y,1), tf.argmax(y_i,1))
@@ -76,8 +91,13 @@ def train_model():
             print(sess.run(accuracy, feed_dict={x_i: mnist.test.images, y_i: mnist.test.labels}))
 
     #将当前的计算图写入日志
-    writer = tf.summary.FileWriter('./log/demo8', tf.get_default_graph())
+    writer = tf.summary.FileWriter('./log/demo8-2', tf.get_default_graph())
     writer.close()
 
+train_model()# 正确率 0.92左右
 
-train_model()  # 正确率 0.92左右
+
+
+
+
+
