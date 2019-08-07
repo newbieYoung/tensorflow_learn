@@ -88,7 +88,7 @@ def train_model():
     writer = tf.summary.FileWriter('./log/demo8-1', tf.get_default_graph())
     writer.close()
 
-train_model()# 正确率 0.92左右
+train_model()# 正确率 0.978 左右
 
 
 
