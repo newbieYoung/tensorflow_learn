@@ -5,10 +5,15 @@ import tensorflow as tf
 
 # 使用和保存模型代码中一样的方式来声明变量
 v1 = tf.Variable(tf.constant(1.0, shape=[1]), name='v1')
-v2 = tf.Variable(tf.constant(1.0, shape=[1]), name='v2')
+
+# 如果声明的变量和已经保存在模型中变量的名称不同，则在使用 tf.train.Saver 时需要使用字典关联
+v2 = tf.Variable(tf.constant(1.0, shape=[1]), name='other_v2')
+
+
 result = v1 + v2
 
-saver = tf.train.Saver()
+# 另外就算只有部分变量名称发生了变化，使用字段关联时需要处理全部变量，那么某些变量的名称没有变化
+saver = tf.train.Saver({'v1':v1, 'v2':v2})
 
 with tf.Session() as sess:
     # 加载已经保存的模型，并通过已经保存的模型中的变量的值来计算加法
